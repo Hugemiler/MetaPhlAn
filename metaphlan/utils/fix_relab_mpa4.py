@@ -60,7 +60,7 @@ def check_params(args):
         error('--output must be specified', exit=True)
 
 def assign_higher_taxonomic_levels(taxa_levs, merged):
-    """Aggregates taxa at lower levels (e.g., species) to higher levels (e.g., genus)"""
+    """Aggregates taxa at lower levels (e.g., species) to higher levels (e.g., genus), preserving total sum"""
     if not merged:
         for i in range(1, 8):
             j = i + 1
@@ -76,7 +76,7 @@ def assign_higher_taxonomic_levels(taxa_levs, merged):
                 if gg not in taxa_levs[-j]:
                     taxa_levs[-j][gg] = [gg_n, taxa_levs[-i][ss][1], '']
                 else:
-                    # Accumulate the relative abundance at the higher level
+                    # Accumulate the relative abundance at the higher level (without renormalization)
                     taxa_levs[-j][gg][1] += taxa_levs[-i][ss][1]
     else:
         # For merged profiles (multiple columns), handle as arrays
@@ -89,13 +89,13 @@ def assign_higher_taxonomic_levels(taxa_levs, merged):
                 if gg not in taxa_levs[-j]:
                     taxa_levs[-j][gg] = taxa_levs[-i][ss]
                 else:
-                    # Accumulate the relative abundance for each column
+                    # Accumulate the relative abundance for each column (without renormalization)
                     taxa_levs[-j][gg] = np.add(taxa_levs[-j][gg], taxa_levs[-i][ss])
     
     return taxa_levs
 
 def fix_relab_mpa4(input, output, merged):
-    """Fixes taxonomic inconsistencies and renormalizes the relative abundances"""
+    """Fixes taxonomic inconsistencies while preserving relative abundances (no renormalization)"""
     taxa_levs = [{}, {}, {}, {}, {}, {}, {}, {}] 
     release = None
     unclassified_fraction = 0
