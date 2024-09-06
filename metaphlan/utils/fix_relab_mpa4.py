@@ -121,30 +121,29 @@ def fix_relab_mpa4(input, output, merged):
                             if 'p__Bacillota' in line:
                                 line = line.replace('p__Bacillota', 'p__Firmicutes')
                             elif 'f__Saccharomycetales_unclassified' in line:
-                                line = line.replace('f__Saccharomycetales_unclassified','f__Debaryomycetaceae')
+                                line = line.replace('f__Saccharomycetales_unclassified', 'f__Debaryomycetaceae')
                             line = line.strip().split('\t') 
-
                         elif release == 'mpa_vOct22_CHOCOPhlAnSGB_202212':
-                                line = line.strip().split('\t')
-                                if line[0] in oct_fixes:
-                                    if not merged:
-                                        line[0],line[1] = oct_fixes[line[0]]
-                                    else:
-                                        line[0] = oct_fixes[line[0]][0]
+                            line = line.strip().split('\t')
+                            if line[0] in oct_fixes:
+                                if not merged:
+                                    line[0], line[1] = oct_fixes[line[0]]
+                                else:
+                                    line[0] = oct_fixes[line[0]][0]
                         else:
-                           error('The release is not specified in the header or does not correspond to mpa_vJun23_CHOCOPhlAnSGB_202307 or mpa_vOct22_CHOCOPhlAnSGB_202212', exit=True)
-                            
+                            error('The release is not specified in the header or does not correspond to mpa_vJun23_CHOCOPhlAnSGB_202307 or mpa_vOct22_CHOCOPhlAnSGB_202212', exit=True)
+                        
                         if not merged:           
-                            taxa_levs[-1][line[0]] = [line[1], float(line[2]), line[3] if len(line)==4 else '']
+                            taxa_levs[-1][line[0]] = [line[1], float(line[2]), line[3] if len(line) == 4 else '']
                         else:
                             taxa_levs[-1][line[0]] = [float(l) for l in line[1:]]
-                            ncols = len(line)-1
+                            ncols = len(line) - 1
 
             taxa_levs = assign_higher_taxonomic_levels(taxa_levs, merged)
 
             # normalize the relative abundances and write to file
             if not merged:
-                sum_level = dict()  
+                sum_level = dict()
                 for level in range(len(taxa_levs)):
                     sum_level[level] = 0
                     for tax in taxa_levs[level]:
