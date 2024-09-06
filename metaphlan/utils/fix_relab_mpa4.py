@@ -188,8 +188,7 @@ def main():
     oct_fixes = read_oct22_fixes(OCT22_FIXES) 
     fix_relab_mpa4(args.input, args.output, args.merged_profiles)
     exec_time = time.time() - t0
-    info("Finish fixing profile ({} seconds)".format(round(exec_time, 2)))
-
+    info(f"Finish fixing profile ({round(exec_time, 2)} seconds)")
 
 if __name__ == '__main__':
     main()
