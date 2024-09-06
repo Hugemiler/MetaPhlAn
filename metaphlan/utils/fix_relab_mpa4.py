@@ -65,21 +65,33 @@ def assign_higher_taxonomic_levels(taxa_levs, merged):
         for i in range(1, 8):
             j = i + 1
             for ss in taxa_levs[-i]:
-                gg = ss.replace('|{}'.format(ss.split('|')[-1]), '')
+                # Parse the taxonomy by splitting on '|'
+                taxonomy_parts = ss.split('|')
+                gg = '|'.join(taxonomy_parts[:-1])  # Higher level taxon
+                
+                # Get the name of the higher taxonomic level from the lower one
                 gg_n = '|'.join(taxa_levs[-i][ss][0].split('|')[:-1])
+                
+                # If the higher taxon doesn't exist, initialize it
                 if gg not in taxa_levs[-j]:
                     taxa_levs[-j][gg] = [gg_n, taxa_levs[-i][ss][1], '']
                 else:
+                    # Accumulate the relative abundance at the higher level
                     taxa_levs[-j][gg][1] += taxa_levs[-i][ss][1]
     else:
+        # For merged profiles (multiple columns), handle as arrays
         for i in range(1, 8):
             j = i + 1
             for ss in taxa_levs[-i]:
-                gg = ss.replace('|{}'.format(ss.split('|')[-1]), '')
+                taxonomy_parts = ss.split('|')
+                gg = '|'.join(taxonomy_parts[:-1])  # Higher level taxon
+                
                 if gg not in taxa_levs[-j]:
                     taxa_levs[-j][gg] = taxa_levs[-i][ss]
                 else:
+                    # Accumulate the relative abundance for each column
                     taxa_levs[-j][gg] = np.add(taxa_levs[-j][gg], taxa_levs[-i][ss])
+    
     return taxa_levs
 
 def fix_relab_mpa4(input, output, merged):
