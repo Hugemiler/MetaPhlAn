@@ -130,9 +130,8 @@ def fix_relab_mpa4(input, output, merged):
                                     line[0], line[1] = oct_fixes[line[0]]
                                 else:
                                     line[0] = oct_fixes[line[0]][0]
-                        else:
-                            error('The release is not specified in the header or does not correspond to mpa_vJun23_CHOCOPhlAnSGB_202307 or mpa_vOct22_CHOCOPhlAnSGB_202212', exit=True)
                         
+                        # Store taxa at the last level without worrying about normalization
                         if not merged:           
                             taxa_levs[-1][line[0]] = [line[1], float(line[2]), line[3] if len(line) == 4 else '']
                         else:
@@ -141,43 +140,17 @@ def fix_relab_mpa4(input, output, merged):
 
             taxa_levs = assign_higher_taxonomic_levels(taxa_levs, merged)
 
-            # normalize the relative abundances and write to file
+            # Write to file without renormalization, ensuring total sum is preserved
             if not merged:
-                sum_level = dict()
                 for level in range(len(taxa_levs)):
-                    sum_level[level] = 0
                     for tax in taxa_levs[level]:
-                        sum_level[level] += taxa_levs[level][tax][1]
-                
-                # Ensure that the unclassified fraction is part of the total sum
-                for level in range(len(taxa_levs)):
-                    total_sum = sum_level[level] + unclassified_fraction
-                    for tax in taxa_levs[level]:
-                        taxa_levs[level][tax][1] = round((100) * taxa_levs[level][tax][1] / total_sum, 5)
-                        wf.write(tax + '\t' + '\t'.join([str(x) for x in taxa_levs[level][tax]]) + '\n')
-                    
-                    # Debug: print the sum including unclassified_fraction
-                    print(f"Level {level} total sum including unclassified: {total_sum}")
-
+                        formatted_values = [f'{x:.5f}' if isinstance(x, float) else x for x in taxa_levs[level][tax]]
+                        wf.write(tax + '\t' + '\t'.join([str(x) for x in formatted_values]) + '\n')
             else:
-                if unclassified_fraction == 0:
-                    unclassified_fraction = [0] * ncols
-                sum_level = dict()
-                for level in range(len(taxa_levs)):
-                    sum_level[level] = [0] * ncols
-                    for tax in taxa_levs[level]:
-                        sum_level[level] = np.add(sum_level[level], taxa_levs[level][tax])
-
-                # Normalize merged profiles, adjusting each column
                 for level in range(len(taxa_levs)):
                     for tax in taxa_levs[level]:
-                        for n in range(len(taxa_levs[level][tax])):
-                            total_sum = sum_level[level][n] + unclassified_fraction[n]
-                            taxa_levs[level][tax][n] = round((100) * taxa_levs[level][tax][n] / total_sum, 5)
-                        wf.write(tax + '\t' + '\t'.join([str(x) for x in taxa_levs[level][tax]]) + '\n')
-                    
-                    # Debug: print the sum for each level
-                    print(f"Level {level} total sum per column: {sum_level[level]} including unclassified: {unclassified_fraction}")
+                        formatted_values = [f'{x:.5f}' if isinstance(x, float) else x for x in taxa_levs[level][tax]]
+                        wf.write(tax + '\t' + '\t'.join([str(x) for x in formatted_values]) + '\n')
 
 def main():
     global oct_fixes
