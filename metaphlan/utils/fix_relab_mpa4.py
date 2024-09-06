@@ -95,7 +95,8 @@ def assign_higher_taxonomic_levels(taxa_levs, merged):
     return taxa_levs
 
 def fix_relab_mpa4(input, output, merged):
-    taxa_levs = [{},{},{},{},{},{},{},{}] 
+    """Fixes taxonomic inconsistencies and renormalizes the relative abundances"""
+    taxa_levs = [{}, {}, {}, {}, {}, {}, {}, {}] 
     release = None
     unclassified_fraction = 0
     with openrt(input) as rf:
