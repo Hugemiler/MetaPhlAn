@@ -4,7 +4,6 @@ __author__ = ('Aitor Blanco Miguez (aitor.blancomiguez@unitn.it), '
 __version__ = '4.1.1'
 __date__ = '11 Mar 2024'
 
-
 import os, time
 try:
     from .util_fun import info, error, warning, openrt
@@ -14,7 +13,7 @@ import argparse as ap
 import numpy as np
 
 script_install_folder = os.path.dirname(os.path.abspath(__file__))
-OCT22_FIXES=os.path.join(script_install_folder,'oct22_fix_tax.tsv')
+OCT22_FIXES = os.path.join(script_install_folder, 'oct22_fix_tax.tsv')
 
 def read_params():
     """ Reads and parses the command line arguments of the script
@@ -23,17 +22,16 @@ def read_params():
         namespace: The populated namespace with the command line arguments
     """
     p = ap.ArgumentParser(formatter_class=ap.RawTextHelpFormatter, add_help=False, 
-                          description = "\nThis script allows you to fix some taxonomic inconsistencies "
-                            "present in mpa_vOct22_CHOCOPhlAnSGB_202212 and mpa_vJun23_CHOCOPhlAnSGB_202307.\n" +
-                            "The output profile will have fixed taxonomies and renormalized relative abundances.\n")  
+                          description="\nThis script allows you to fix some taxonomic inconsistencies "
+                                      "present in mpa_vOct22_CHOCOPhlAnSGB_202212 and mpa_vJun23_CHOCOPhlAnSGB_202307.\n" +
+                                      "The output profile will have fixed taxonomies and renormalized relative abundances.\n")
     
     requiredNamed = p.add_argument_group('required arguments')
-    requiredNamed.add_argument('-i','--input', type=str, default=None, help="The path to the input profile")
-    requiredNamed.add_argument('-o','--output', type=str, default=None, help="The path to the output profile")
+    requiredNamed.add_argument('-i', '--input', type=str, default=None, help="The path to the input profile")
+    requiredNamed.add_argument('-o', '--output', type=str, default=None, help="The path to the output profile")
     p.add_argument('--merged_profiles', action='store_true', default=False, help=("To specify when running the script on profiles that were already merged with merge_metaphlan_tables.py"))
     p.add_argument("-h", "--help", action="help", help="show this help message and exit")
 
-    
     return p.parse_args()
 
 def read_oct22_fixes(file):
@@ -41,13 +39,12 @@ def read_oct22_fixes(file):
     Args:
         file: file with Oct22 fixes
     """
-    oct_fixes=dict()
+    oct_fixes = dict()
     with open(file) as inf:
         for l in inf.readlines()[1:]:
-            old_tax, new_tax, new_tax_id = l.split('\t') 
-            oct_fixes[old_tax]= (new_tax, new_tax_id.strip())
+            old_tax, new_tax, new_tax_id = l.split('\t')
+            oct_fixes[old_tax] = (new_tax, new_tax_id.strip())
     return oct_fixes
-
 
 def check_params(args):
     """Checks the mandatory command line arguments of the script
@@ -58,8 +55,7 @@ def check_params(args):
     if not args.input:
         error('--input must be specified', exit=True)
     elif not os.path.exists(args.input):
-        error('The file {} does not exist'.format(
-            args.input), exit=True)           
+        error(f'The file {args.input} does not exist', exit=True)
     if not args.output:
         error('--output must be specified', exit=True)
 
