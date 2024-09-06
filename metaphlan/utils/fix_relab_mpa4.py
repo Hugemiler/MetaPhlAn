@@ -24,7 +24,7 @@ def read_params():
     p = ap.ArgumentParser(formatter_class=ap.RawTextHelpFormatter, add_help=False, 
                           description="\nThis script allows you to fix some taxonomic inconsistencies "
                                       "present in mpa_vOct22_CHOCOPhlAnSGB_202212 and mpa_vJun23_CHOCOPhlAnSGB_202307.\n" +
-                                      "The output profile will have fixed taxonomies and renormalized relative abundances.\n")
+                                      "The output profile will have fixed taxonomies without the need for renormalization.\n")
     
     requiredNamed = p.add_argument_group('required arguments')
     requiredNamed.add_argument('-i', '--input', type=str, default=None, help="The path to the input profile")
