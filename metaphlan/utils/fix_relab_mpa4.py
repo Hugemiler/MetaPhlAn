@@ -148,25 +148,36 @@ def fix_relab_mpa4(input, output, merged):
                     sum_level[level] = 0
                     for tax in taxa_levs[level]:
                         sum_level[level] += taxa_levs[level][tax][1]
+                
+                # Ensure that the unclassified fraction is part of the total sum
                 for level in range(len(taxa_levs)):
+                    total_sum = sum_level[level] + unclassified_fraction
                     for tax in taxa_levs[level]:
-                        taxa_levs[level][tax][1] = round((100 - unclassified_fraction) * taxa_levs[level][tax][1]/sum_level[level], 5)
+                        taxa_levs[level][tax][1] = round((100) * taxa_levs[level][tax][1] / total_sum, 5)
                         wf.write(tax + '\t' + '\t'.join([str(x) for x in taxa_levs[level][tax]]) + '\n')
+                    
+                    # Debug: print the sum including unclassified_fraction
+                    print(f"Level {level} total sum including unclassified: {total_sum}")
+
             else:
                 if unclassified_fraction == 0:
                     unclassified_fraction = [0] * ncols
-                sum_level = dict()  
+                sum_level = dict()
                 for level in range(len(taxa_levs)):
-                    sum_level[level] = [0]*ncols
+                    sum_level[level] = [0] * ncols
                     for tax in taxa_levs[level]:
                         sum_level[level] = np.add(sum_level[level], taxa_levs[level][tax])
 
+                # Normalize merged profiles, adjusting each column
                 for level in range(len(taxa_levs)):
                     for tax in taxa_levs[level]:
                         for n in range(len(taxa_levs[level][tax])):
-                            taxa_levs[level][tax][n] = round((100 - unclassified_fraction[n]) * taxa_levs[level][tax][n]/sum_level[level][n], 5)
+                            total_sum = sum_level[level][n] + unclassified_fraction[n]
+                            taxa_levs[level][tax][n] = round((100) * taxa_levs[level][tax][n] / total_sum, 5)
                         wf.write(tax + '\t' + '\t'.join([str(x) for x in taxa_levs[level][tax]]) + '\n')
-
+                    
+                    # Debug: print the sum for each level
+                    print(f"Level {level} total sum per column: {sum_level[level]} including unclassified: {unclassified_fraction}")
 
 def main():
     global oct_fixes
