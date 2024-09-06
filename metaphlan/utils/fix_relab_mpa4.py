@@ -60,6 +60,7 @@ def check_params(args):
         error('--output must be specified', exit=True)
 
 def assign_higher_taxonomic_levels(taxa_levs, merged):
+    """Aggregates taxa at lower levels (e.g., species) to higher levels (e.g., genus)"""
     if not merged:
         for i in range(1, 8):
             j = i + 1
