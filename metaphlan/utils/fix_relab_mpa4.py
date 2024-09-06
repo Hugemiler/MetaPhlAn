@@ -4,7 +4,6 @@ __author__ = ('Aitor Blanco Miguez (aitor.blancomiguez@unitn.it), '
 __version__ = '4.1.1'
 __date__ = '11 Mar 2024'
 
-
 import os, time
 try:
     from .util_fun import info, error, warning, openrt
@@ -14,7 +13,7 @@ import argparse as ap
 import numpy as np
 
 script_install_folder = os.path.dirname(os.path.abspath(__file__))
-OCT22_FIXES=os.path.join(script_install_folder,'oct22_fix_tax.tsv')
+OCT22_FIXES = os.path.join(script_install_folder, 'oct22_fix_tax.tsv')
 
 def read_params():
     """ Reads and parses the command line arguments of the script
@@ -23,17 +22,16 @@ def read_params():
         namespace: The populated namespace with the command line arguments
     """
     p = ap.ArgumentParser(formatter_class=ap.RawTextHelpFormatter, add_help=False, 
-                          description = "\nThis script allows you to fix some taxonomic inconsistencies "
-                            "present in mpa_vOct22_CHOCOPhlAnSGB_202212 and mpa_vJun23_CHOCOPhlAnSGB_202307.\n" +
-                            "The output profile will have fixed taxonomies and renormalized relative abundances.\n")  
+                          description="\nThis script allows you to fix some taxonomic inconsistencies "
+                                      "present in mpa_vOct22_CHOCOPhlAnSGB_202212 and mpa_vJun23_CHOCOPhlAnSGB_202307.\n" +
+                                      "The output profile will have fixed taxonomies without the need for renormalization.\n")
     
     requiredNamed = p.add_argument_group('required arguments')
-    requiredNamed.add_argument('-i','--input', type=str, default=None, help="The path to the input profile")
-    requiredNamed.add_argument('-o','--output', type=str, default=None, help="The path to the output profile")
+    requiredNamed.add_argument('-i', '--input', type=str, default=None, help="The path to the input profile")
+    requiredNamed.add_argument('-o', '--output', type=str, default=None, help="The path to the output profile")
     p.add_argument('--merged_profiles', action='store_true', default=False, help=("To specify when running the script on profiles that were already merged with merge_metaphlan_tables.py"))
     p.add_argument("-h", "--help", action="help", help="show this help message and exit")
 
-    
     return p.parse_args()
 
 def read_oct22_fixes(file):
@@ -41,13 +39,12 @@ def read_oct22_fixes(file):
     Args:
         file: file with Oct22 fixes
     """
-    oct_fixes=dict()
+    oct_fixes = dict()
     with open(file) as inf:
         for l in inf.readlines()[1:]:
-            old_tax, new_tax, new_tax_id = l.split('\t') 
-            oct_fixes[old_tax]= (new_tax, new_tax_id.strip())
+            old_tax, new_tax, new_tax_id = l.split('\t')
+            oct_fixes[old_tax] = (new_tax, new_tax_id.strip())
     return oct_fixes
-
 
 def check_params(args):
     """Checks the mandatory command line arguments of the script
@@ -58,35 +55,48 @@ def check_params(args):
     if not args.input:
         error('--input must be specified', exit=True)
     elif not os.path.exists(args.input):
-        error('The file {} does not exist'.format(
-            args.input), exit=True)           
+        error(f'The file {args.input} does not exist', exit=True)
     if not args.output:
         error('--output must be specified', exit=True)
 
 def assign_higher_taxonomic_levels(taxa_levs, merged):
+    """Aggregates taxa at lower levels (e.g., species) to higher levels (e.g., genus), preserving total sum"""
     if not merged:
         for i in range(1, 8):
             j = i + 1
             for ss in taxa_levs[-i]:
-                gg = ss.replace('|{}'.format(ss.split('|')[-1]), '')
+                # Parse the taxonomy by splitting on '|'
+                taxonomy_parts = ss.split('|')
+                gg = '|'.join(taxonomy_parts[:-1])  # Higher level taxon
+                
+                # Get the name of the higher taxonomic level from the lower one
                 gg_n = '|'.join(taxa_levs[-i][ss][0].split('|')[:-1])
+                
+                # If the higher taxon doesn't exist, initialize it
                 if gg not in taxa_levs[-j]:
                     taxa_levs[-j][gg] = [gg_n, taxa_levs[-i][ss][1], '']
                 else:
+                    # Accumulate the relative abundance at the higher level (without renormalization)
                     taxa_levs[-j][gg][1] += taxa_levs[-i][ss][1]
     else:
+        # For merged profiles (multiple columns), handle as arrays
         for i in range(1, 8):
             j = i + 1
             for ss in taxa_levs[-i]:
-                gg = ss.replace('|{}'.format(ss.split('|')[-1]), '')
+                taxonomy_parts = ss.split('|')
+                gg = '|'.join(taxonomy_parts[:-1])  # Higher level taxon
+                
                 if gg not in taxa_levs[-j]:
                     taxa_levs[-j][gg] = taxa_levs[-i][ss]
                 else:
+                    # Accumulate the relative abundance for each column (without renormalization)
                     taxa_levs[-j][gg] = np.add(taxa_levs[-j][gg], taxa_levs[-i][ss])
+    
     return taxa_levs
 
 def fix_relab_mpa4(input, output, merged):
-    taxa_levs = [{},{},{},{},{},{},{},{}] 
+    """Fixes taxonomic inconsistencies while preserving relative abundances (no renormalization)"""
+    taxa_levs = [{}, {}, {}, {}, {}, {}, {}, {}] 
     release = None
     unclassified_fraction = 0
     with openrt(input) as rf:
@@ -111,53 +121,36 @@ def fix_relab_mpa4(input, output, merged):
                             if 'p__Bacillota' in line:
                                 line = line.replace('p__Bacillota', 'p__Firmicutes')
                             elif 'f__Saccharomycetales_unclassified' in line:
-                                line = line.replace('f__Saccharomycetales_unclassified','f__Debaryomycetaceae')
+                                line = line.replace('f__Saccharomycetales_unclassified', 'f__Debaryomycetaceae')
                             line = line.strip().split('\t') 
-
                         elif release == 'mpa_vOct22_CHOCOPhlAnSGB_202212':
-                                line = line.strip().split('\t')
-                                if line[0] in oct_fixes:
-                                    if not merged:
-                                        line[0],line[1] = oct_fixes[line[0]]
-                                    else:
-                                        line[0] = oct_fixes[line[0]][0]
-                        else:
-                           error('The release is not specified in the header or does not correspond to mpa_vJun23_CHOCOPhlAnSGB_202307 or mpa_vOct22_CHOCOPhlAnSGB_202212', exit=True)
-                            
+                            line = line.strip().split('\t')
+                            if line[0] in oct_fixes:
+                                if not merged:
+                                    line[0], line[1] = oct_fixes[line[0]]
+                                else:
+                                    line[0] = oct_fixes[line[0]][0]
+                        
+                        # Store taxa at the last level without worrying about normalization
                         if not merged:           
-                            taxa_levs[-1][line[0]] = [line[1], float(line[2]), line[3] if len(line)==4 else '']
+                            taxa_levs[-1][line[0]] = [line[1], float(line[2]), line[3] if len(line) == 4 else '']
                         else:
                             taxa_levs[-1][line[0]] = [float(l) for l in line[1:]]
-                            ncols = len(line)-1
+                            ncols = len(line) - 1
 
             taxa_levs = assign_higher_taxonomic_levels(taxa_levs, merged)
 
-            # normalize the relative abundances and write to file
+            # Write to file without renormalization, ensuring total sum is preserved
             if not merged:
-                sum_level = dict()  
-                for level in range(len(taxa_levs)):
-                    sum_level[level] = 0
-                    for tax in taxa_levs[level]:
-                        sum_level[level] += taxa_levs[level][tax][1]
                 for level in range(len(taxa_levs)):
                     for tax in taxa_levs[level]:
-                        taxa_levs[level][tax][1] = round((100 - unclassified_fraction) * taxa_levs[level][tax][1]/sum_level[level], 5)
-                        wf.write(tax + '\t' + '\t'.join([str(x) for x in taxa_levs[level][tax]]) + '\n')
+                        formatted_values = [f'{x:.5f}' if isinstance(x, float) else x for x in taxa_levs[level][tax]]
+                        wf.write(tax + '\t' + '\t'.join([str(x) for x in formatted_values]) + '\n')
             else:
-                if unclassified_fraction == 0:
-                    unclassified_fraction = [0] * ncols
-                sum_level = dict()  
-                for level in range(len(taxa_levs)):
-                    sum_level[level] = [0]*ncols
-                    for tax in taxa_levs[level]:
-                        sum_level[level] = np.add(sum_level[level], taxa_levs[level][tax])
-
                 for level in range(len(taxa_levs)):
                     for tax in taxa_levs[level]:
-                        for n in range(len(taxa_levs[level][tax])):
-                            taxa_levs[level][tax][n] = round((100 - unclassified_fraction[n]) * taxa_levs[level][tax][n]/sum_level[level][n], 5)
-                        wf.write(tax + '\t' + '\t'.join([str(x) for x in taxa_levs[level][tax]]) + '\n')
-
+                        formatted_values = [f'{x:.5f}' if isinstance(x, float) else x for x in taxa_levs[level][tax]]
+                        wf.write(tax + '\t' + '\t'.join([str(x) for x in formatted_values]) + '\n')
 
 def main():
     global oct_fixes
@@ -168,8 +161,7 @@ def main():
     oct_fixes = read_oct22_fixes(OCT22_FIXES) 
     fix_relab_mpa4(args.input, args.output, args.merged_profiles)
     exec_time = time.time() - t0
-    info("Finish fixing profile ({} seconds)".format(round(exec_time, 2)))
-
+    info(f"Finish fixing profile ({round(exec_time, 2)} seconds)")
 
 if __name__ == '__main__':
     main()
